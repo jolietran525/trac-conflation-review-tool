@@ -15,41 +15,107 @@ body {
 
 main {overflow: auto;}
 
-main, #map {
+main {
   padding: 0;
   margin: 0;
   min-height: 100vh;
-  width: 100%;}
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+}
 
-div.content {
-  /*max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.2s ease-out;*/
-  box-sizing: border-box;
-  padding: 0 0.5rem;}
+#map {
+  flex-grow: 1;
+}
 
 a {color: #4b2e83;}
 a:visited {color: #666;}
 a:hover {text-decoration: none;}
 
+/* table styles */
 table {
   display: inline-block;
+  vertical-align: top;
+  /*white-space: nowrap;*/
   border-collapse: collapse;
   border-spacing: 0;
-  font-size: 0.8rem;
-  padding: 0;}
+  margin-bottom: 0.5em;
+}
 
-  .legend {
+thead, tbody {
+  border: #666 solid;
+  border-width: 2px 0;
+}
+
+tr th:nth-child(even),
+tr td:nth-child(even) {
+  background: rgba(204,204,204,0.4);
+}
+th, td {padding: 0.2em 0.5em;}
+th {
+  text-align: left;
+  border-bottom: 2px #666 solid;
+}
+td {text-align: right;}
+td:first-child {font-weight: bold;}
+
+
+.legend, .score-filter-control {
     background-color: white;
     border: 1px solid #ccc;
     padding: 10px;
     max-width: 200px;
     z-index: 2;
   }
-  .legend-color {
-    width: 15px;
-    height: 15px;
+
+
+.legend-color {
+    width: 25px;
+    height: 5px;
     display: inline-block;
-    border-radius: 50%;
-    border: 1px solid white ;
+    border: 0.5px solid rgba(61, 61, 61, 0.503) ;
+    margin-right: 5px;
+}
+
+#side-panel {
+  flex-basis: 400px;
+  background-color: #111; /* Black*/
+  transition: 0.5s; /* 0.5 second transition effect to slide in the sidebar */
+}
+
+#side-panel a {
+  padding: 10px;
+  text-decoration: none;
+  font-size: 25px;
+  color: #818181;
+  display: block;
+  transition: 0.3s;
+  overflow: hidden;
+}
+
+#side-panel a:hover, a:hover {
+  color: #f1f1f1;
+}
+
+.closebtn {
+  top: 10px; /* Adjust the top position as needed */
+  right: 10px; /* Adjust the left position as needed */
+  position: absolute;
+  font-size: 36px;
+  cursor: pointer;
+}
+
+.openbtn {
+  position: absolute; /* or position: absolute; */
+  top: 10px; /* Adjust the top position as needed */
+  right: 10px; /* Adjust the left position as needed */
+  display: none; 
+  font-size: 25px;
+  cursor: pointer;
+  background: transparent;
+  color: #818181;
+  padding: 10px;
+  z-index: 3;
+  border: none;
+  transition: 0.3s;
 }

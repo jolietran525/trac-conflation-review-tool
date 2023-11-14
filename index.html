@@ -19,6 +19,9 @@
     <script src="https://d3js.org/d3-collection.v1.min.js"></script>
     <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
 
+    <!-- font awesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
     <!-- topojson -->
     <!-- script src="https://unpkg.com/topojson@3"></script -->
 
@@ -34,7 +37,16 @@
 
 <body>
   <main>
-    <div id="map"></div>
+    <div id="map">
+    </div>
+    
+    <a href="javascript:void(0)" class="openbtn">
+      <i class="fa fa-bars" onclick="openNav()"></i>
+    </a>
+
+    <div id="side-panel">
+      <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&#10006;</a>
+    </div>
   </main>
 
   <script src="js/main.js"> </script>

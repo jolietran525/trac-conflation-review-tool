@@ -1,16 +1,10 @@
 function score_bin(s) {
     if (s === null) { return '#999'; }
-    else if (s > 0.8) { return '#090'; }
-    else if (s > 0.5) { return '#c90'; }
+    else if (s >= 0.8) { return '#090'; }
+    else if (s >= 0.5) { return '#c90'; }
     else if (s >= 0) { return '#c00'; }
     else { return '#999'; }
 }
-
-// get ISO8601 formatted datetime YYYY-MM-DD HH:MM:SS
-function iso8601(date) { return new Date(date).toLocaleString('sv-SV'); }
-
-// get local formatted datetime beginning of month YYYY-MM
-function get_mon(date) { return new Date(date).toISOString().substr(0,7); }
 
 function popup_attributes(feature, layer) {
     let html = '<table>';
@@ -22,7 +16,8 @@ function popup_attributes(feature, layer) {
 
 let map = L.map('map', {zoomControl: false}).setView([47.60, -122.33], 12);
 
-let tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/{tileType}/{z}/{x}/{y}{r}.png', {
+// cartodb tiles - types: positron: light_[all | nolabels], dark_matter: dark_[all | nolabels]
+let tiles_lght = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/{tileType}/{z}/{x}/{y}{r}.png', {
     attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://cartodb.com/attributions">CARTO</a>',
     subdomains: 'abcd',
     tileType: 'light_all',
@@ -30,33 +25,74 @@ let tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/{tileType
     }
 );
 
+let tiles_drk = L.tileLayer('https://{s}.basemaps.cartocdn.com/{tileType}/{z}/{x}/{y}{r}.png', {
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://cartodb.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    tileType: 'dark_all',
+    maxZoom: 19
+  });
 
-tiles.addTo(map);
-L.control.zoom({position: 'topright'}).addTo(map);
+
+let tiles_hyd = L.tileLayer('https://{s}.tile.openstreetmap.se/hydda/{tileType}/{z}/{x}/{y}.png', {
+    attribution: 'Tiles courtesy of <a href="http://openstreetmap.se/" target="_blank">OpenStreetMap Sweden</a>',
+    tileType: 'full',
+    maxZoom: 20
+});
+
+// cartodb voyager - types: voyager, voyager_nolabels, voyager_labels_under
+let tiles_vgr = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/{tileType}/{z}/{x}/{y}{r}.png', {
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://cartodb.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+    tileType: 'voyager_labels_under',
+      maxZoom: 19
+  });
+
+
+// esri world imagery satellite tiles
+let tiles_ewi = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+  });
+
+// esri world topo map tiles
+let tiles_ewt = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+  });
+
+
+// default type
+tiles_lght.addTo(map);
+
+// Control
+L.control.zoom({position: 'topleft'}).addTo(map);
 L.control.scale({maxWidth: 200, position: 'bottomright'}).addTo(map);
 
+let baseLayers = {
+      "Light (CartoDB)": tiles_lght,
+      "Dark (CartoDB)": tiles_drk,
+      "Color (Voyager)": tiles_vgr,
+      "Satellite (ESRI)":  tiles_ewi,
+      "Terrain (ESRI)": tiles_ewt
+    };
+let overlayLayers = {};
+let layerControl = L.control.layers(baseLayers,overlayLayers, {position: 'topleft'}).addTo(map);
+
 // add title
-let title = L.control({position: 'topleft'});
-title.onAdd = function(mp) {
-    let _tdiv = L.DomUtil.create('div', 'title');
-    _tdiv.innerHTML = '<h2>GeoJSON Viewer</h2>'
-    return _tdiv;
-}
-title.addTo(map);
+// let title = L.control({position: 'topleft'});
+// title.onAdd = function(mp) {
+//     let _tdiv = L.DomUtil.create('div', 'title');
+//     _tdiv.innerHTML = '<h2></h2>'
+//     return _tdiv;
+// }
+// title.addTo(map);
 
 let osmLayer;
-const t_osm = d3.json("data/metrics_osm_full.geojson");
+const t_osm = d3.json("data/metrics_osm_full_1.geojson");
 t_osm.then(osm => {
     // add features to map
     osmLayer  = L.geoJSON(osm, {
         style: function(e) { return { weight: 5, opacity: 0.8, color:  "#BAD4E4" } },
-        // onEachFeature: popup_attributes
-    }).addTo(map);
-
-    // zoom to content
-    // map.fitBounds(osmLayer.getBounds());
-
-    osmLayer.setZIndex(1);
+        onEachFeature: popup_attributes
+    });
 });
 
 
@@ -66,31 +102,25 @@ t_sdot.then(sdot => {
     // add features to map
     sdotLayer = L.geoJSON(sdot, {
         style: function(e) { return { weight: 5, opacity: 0.5, color:  "#E4C1BA" } },
-        // onEachFeature: popup_attributes
-    }).addTo(map);
-
-    // zoom to content
-    map.fitBounds(sdotLayer.getBounds());
-
-    sdotLayer.setZIndex(2);
+        onEachFeature: popup_attributes
+    });
 });
 
 let conflationLayer;
 // get edges and add to map
-const t_conflation = d3.json("data/sidewalk_full_json.geojson");
-t_conflation.then(conflation => {
-    // Filter the GeoJSON features based on the 'conflated_score'
-    const filteredFeatures = conflation.features.filter(feature => feature.properties.conflated_score < 0.8 && feature.properties.conflated_score != null);
+const t_conflation = d3.json("data/sidewalk_full_json_1.geojson");
+let filterConditions = {
+    score_08: true,
+    score_05_08: true,
+    score_lt_05: true,
+    score_null: true
+};
 
-    // Create a new GeoJSON object with the filtered features
-    const filteredConflation = {
-        type: 'FeatureCollection',
-        features: filteredFeatures
-    };
+t_conflation.then(conflation => {
     let highlightedFeature = null; 
 
     // add features to map
-    conflationLayer = L.geoJSON(filteredConflation, {
+    conflationLayer = L.geoJSON(conflation, {
         style: function (e) {
             return { weight: 5, opacity: 0.5, color: score_bin(e.properties.conflated_score) }
         },
@@ -144,30 +174,98 @@ t_conflation.then(conflation => {
                 popup_attributes(highlightedFeature.feature, highlightedFeature);
             });
         }
-    }).addTo(map);
-    
-    conflationLayer.setZIndex(3);
+    });
 
-    map.fitBounds(conflationLayer.getBounds());
+
+    osmLayer.addTo(map);
+    sdotLayer.addTo(map);
+    conflationLayer.addTo(map);
+    
+    map.fitBounds(sdotLayer.getBounds());
+    
+    // add layers to layer control
+    layerControl.addOverlay(osmLayer,"OSM Features");
+    layerControl.addOverlay(sdotLayer,"SDOT Features");
+    layerControl.addOverlay(conflationLayer,"Conflation Features");
+
+    // Add a control to toggle feature visibility based on score conditions
+    let scoreFilterControl = L.control({ position: 'topleft' });
+    scoreFilterControl.onAdd = function (map) {
+        let div = L.DomUtil.create('div', 'score-filter-control');
+        div.innerHTML += '<label>Filter Features:</label><br>';
+        div.innerHTML += '<input type="checkbox" id="scoreFilter08" checked><label>Score >= 0.8</label><br>';
+        div.innerHTML += '<input type="checkbox" id="scoreFilter05_08" checked><label>Score >=0.5</label><br>';
+        div.innerHTML += '<input type="checkbox" id="scoreFilterLt05" checked><label>Score >= 0</label><br>';
+        div.innerHTML += '<input type="checkbox" id="scoreFilterNull" checked><label>Score NULL</label><br>';
+
+        // Add event listeners to the checkboxes
+        div.querySelector('#scoreFilter08').addEventListener('change', function () {
+            filterConditions.score_08 = this.checked;
+            updateFilteredFeatures();
+        });
+
+        div.querySelector('#scoreFilter05_08').addEventListener('change', function () {
+            filterConditions.score_05_08 = this.checked;
+            updateFilteredFeatures();
+        });
+
+        div.querySelector('#scoreFilterLt05').addEventListener('change', function () {
+            filterConditions.score_lt_05 = this.checked;
+            updateFilteredFeatures();
+        });
+
+        div.querySelector('#scoreFilterNull').addEventListener('change', function () {
+            filterConditions.score_null = this.checked;
+            updateFilteredFeatures();
+        });
+
+        return div;
+    };
+    scoreFilterControl.addTo(map);
+
+    function updateFilteredFeatures() {
+        const filteredFeatures = conflation.features.filter(feature => {
+            const score = feature.properties.conflated_score;
+
+            if (filterConditions.score_08 && score >= 0.8) {
+                return true;
+            } else if (filterConditions.score_05_08 && score >= 0.5 && score < 0.8) {
+                return true;
+            } else if (filterConditions.score_lt_05 && score >= 0 && score < 0.5) {
+                return true;
+            } else if (filterConditions.score_null && score === null) {
+                return true;
+            } else {
+                return false;
+            }
+        });
+
+        // Update the GeoJSON layer with the new filtered features
+        conflationLayer.clearLayers();
+        conflationLayer.addData({
+            type: 'FeatureCollection',
+            features: filteredFeatures
+        });
+    }
 });
 
 
-
-
-// Legend for SDOT Layer
+// Legend
 let layerLegend = L.control({ position: 'bottomleft' });
 layerLegend.onAdd = function (map) {
     let div = L.DomUtil.create('div', 'legend');
     div.innerHTML += '<h4>SDOT Layer</h4>';
-    div.innerHTML += '<span class="legend-color" style="background-color: #E4C1BA"></span><span>Default</span><br>';
+    div.innerHTML += '<span class="legend-color" style="background-color: #E4C1BA"></span><label>Default</label><br>';
+
     // Add more legend items as needed for different styles/colors
     div.innerHTML += '<h4>Conflation Layer</h4>';
-    div.innerHTML += '<span class="legend-color" style="background-color: #090"></span><span>Score > 0.8</span><br>';
-    div.innerHTML += '<span class="legend-color" style="background-color: #c90"></span><span>Score > 0.5</span><br>';
-    div.innerHTML += '<span class="legend-color" style="background-color: #c00"></span><span>Score >= 0</span><br>';
+    div.innerHTML += '<span class="legend-color" style="background-color: #090"></span><label>Score > 0.8</label><br>';
+    div.innerHTML += '<span class="legend-color" style="background-color: #c90"></span><label>Score > 0.5</label><br>';
+    div.innerHTML += '<span class="legend-color" style="background-color: #c00"></span><label>Score >= 0</label><br>';
+    div.innerHTML += '<span class="legend-color" style="background-color: #999"></span><label>Score NULL</label><br>';
 
     div.innerHTML += '<h4>OSM Layer</h4>';
-    div.innerHTML += '<span class="legend-color" style="background-color: #BAD4E4"></span><span>Default</span><br>';
+    div.innerHTML += '<span class="legend-color" style="background-color: #BAD4E4"></span><label>Default</label><br>';
     
     return div;
 };
@@ -213,3 +311,20 @@ function highlightFeaturesInOSM(osm_id) {
         }
     });
 }
+
+
+// Side Panel
+/* Set the width of the sidebar to 250px and the left margin of the page content to 250px */
+function openNav() {
+    document.getElementById("side-panel").style.display = "block";
+    document.getElementById("side-panel").style.width = "400px";
+    document.getElementsByClassName("openbtn")[0].style.display = "none";
+}
+
+
+function closeNav() {
+    document.getElementById("side-panel").style.display = "none";
+    document.getElementsByClassName("openbtn")[0].style.display = "inline-block";
+}
+
+ 
