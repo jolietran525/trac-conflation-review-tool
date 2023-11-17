@@ -26,11 +26,10 @@ main {
 
 #map {
   flex-grow: 1;
+  z-index: 1;
 }
 
-a {color: #4b2e83;}
 a:visited {color: #666;}
-a:hover {text-decoration: none;}
 
 /* table styles */
 table {
@@ -80,7 +79,9 @@ td:first-child {font-weight: bold;}
 #side-panel {
   flex-basis: 400px;
   background-color: #111; /* Black*/
-  transition: 0.5s; /* 0.5 second transition effect to slide in the sidebar */
+  transition: 1s; /* 0.5 second transition effect to slide in the sidebar */
+  overflow: hidden; 
+  display: none;
 }
 
 #side-panel a {
@@ -95,13 +96,18 @@ td:first-child {font-weight: bold;}
 
 #side-panel a:hover, a:hover {
   color: #f1f1f1;
+  transition: 0.3s;
+}
+
+#side-panel .content {
+  padding: 20px;
 }
 
 .closebtn {
   top: 10px; /* Adjust the top position as needed */
   right: 10px; /* Adjust the left position as needed */
   position: absolute;
-  font-size: 36px;
+  font-size: 40px;
   cursor: pointer;
 }
 
@@ -109,7 +115,7 @@ td:first-child {font-weight: bold;}
   position: absolute; /* or position: absolute; */
   top: 10px; /* Adjust the top position as needed */
   right: 10px; /* Adjust the left position as needed */
-  display: none; 
+  display: inline-block; 
   font-size: 25px;
   cursor: pointer;
   background: transparent;

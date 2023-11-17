@@ -86,7 +86,7 @@ let layerControl = L.control.layers(baseLayers,overlayLayers, {position: 'toplef
 // title.addTo(map);
 
 let osmLayer;
-const t_osm = d3.json("data/metrics_osm_full_1.geojson");
+const t_osm = d3.json("data/metrics_osm_2.geojson");
 t_osm.then(osm => {
     // add features to map
     osmLayer  = L.geoJSON(osm, {
@@ -97,7 +97,7 @@ t_osm.then(osm => {
 
 
 let sdotLayer;
-const t_sdot = d3.json("data/metrics_sdot_full.geojson");
+const t_sdot = d3.json("data/metrics_sdot_2.geojson");
 t_sdot.then(sdot => {
     // add features to map
     sdotLayer = L.geoJSON(sdot, {
@@ -108,7 +108,8 @@ t_sdot.then(sdot => {
 
 let conflationLayer;
 // get edges and add to map
-const t_conflation = d3.json("data/sidewalk_full_json_1.geojson");
+const t_conflation = d3.json("data/conflated_osm_2.geojson");
+
 let filterConditions = {
     score_08: true,
     score_05_08: true,
@@ -119,10 +120,18 @@ let filterConditions = {
 t_conflation.then(conflation => {
     let highlightedFeature = null; 
 
+    function getDefaultStyle(conflated_score) {
+        return {
+            weight: 5,
+            opacity: 0.5,
+            color: score_bin(conflated_score)
+        };
+    }
+    
     // add features to map
     conflationLayer = L.geoJSON(conflation, {
         style: function (e) {
-            return { weight: 5, opacity: 0.5, color: score_bin(e.properties.conflated_score) }
+            return getDefaultStyle(e.properties.conflated_score);
         },
     
         onEachFeature: function (feature, layer) {
@@ -144,16 +153,8 @@ t_conflation.then(conflation => {
             layer.on('click', function (e) {
                 // Reset the style of the previously highlighted feature
                 if (highlightedFeature) {
-                    highlightedFeature.setStyle({
-                        weight: 5,            // Reset the weight
-                        opacity: 0.5,         // Reset the opacity
-                        color: score_bin(highlightedFeature.feature.properties.conflated_score) // Reset the color
-                    });
+                    highlightedFeature.setStyle(getDefaultStyle(highlightedFeature.feature.properties.conflated_score));
                 }
-    
-                // Get the sdot_objectid and osm_id from the clicked feature
-                const sdot_objectid = feature.properties.sdot_objectid;
-                const osm_id = feature.properties.osm_id;
     
                 // Highlight the clicked feature in the conflation layer
                 layer.setStyle({
@@ -166,7 +167,10 @@ t_conflation.then(conflation => {
 
                 // Set the currently highlighted feature
                 highlightedFeature = layer;
-    
+                
+                // Get the sdot_objectid and osm_id from the clicked feature
+                const sdot_objectid = feature.properties.sdot_objectid;
+                const osm_id = feature.properties.osm_id;
                 // Highlight the features in the sdot and osm layers with matching IDs
                 highlightFeaturesInSDOT(sdot_objectid);
                 highlightFeaturesInOSM(osm_id);
@@ -189,7 +193,8 @@ t_conflation.then(conflation => {
     layerControl.addOverlay(conflationLayer,"Conflation Features");
 
     // Add a control to toggle feature visibility based on score conditions
-    let scoreFilterControl = L.control({ position: 'topleft' });
+    let scoreFilterControl = L.control({ position: 'bottomleft' });
+
     scoreFilterControl.onAdd = function (map) {
         let div = L.DomUtil.create('div', 'score-filter-control');
         div.innerHTML += '<label>Filter Features:</label><br>';
@@ -227,15 +232,15 @@ t_conflation.then(conflation => {
         const filteredFeatures = conflation.features.filter(feature => {
             const score = feature.properties.conflated_score;
 
-            if (filterConditions.score_08 && score >= 0.8) {
+            if (filterConditions.score_null && score === null)  {
+                return true;
+            } else if (filterConditions.score_08 && score >= 0.8) {
                 return true;
             } else if (filterConditions.score_05_08 && score >= 0.5 && score < 0.8) {
                 return true;
-            } else if (filterConditions.score_lt_05 && score >= 0 && score < 0.5) {
+            } else if (filterConditions.score_lt_05 && score >= 0 && score < 0.5 && score !== null) {
                 return true;
-            } else if (filterConditions.score_null && score === null) {
-                return true;
-            } else {
+            }  else {
                 return false;
             }
         });
@@ -321,10 +326,46 @@ function openNav() {
     document.getElementsByClassName("openbtn")[0].style.display = "none";
 }
 
-
 function closeNav() {
     document.getElementById("side-panel").style.display = "none";
-    document.getElementsByClassName("openbtn")[0].style.display = "inline-block";
+    document.getElementsByClassName("openbtn")[0].style.display = "block";
 }
 
- 
+function filterAndSort() {
+    // Filter features based on conflated_score
+    const filteredFeatures = conflationLayer.toGeoJSON().features.filter(feature => {
+        const score = feature.properties.conflated_score;
+        return (score < 0.8 && score !== null); // Adjust the condition as needed
+    });
+
+    // Sort the filtered features based on osm_id and start_end_seg
+    filteredFeatures.sort((a, b) => {
+        if (a.properties.osm_id !== b.properties.osm_id) {
+            return a.properties.osm_id - b.properties.osm_id;
+        } else {
+            return a.properties.start_end_seg - b.properties.start_end_seg;
+        }
+    });
+
+    // Update the GeoJSON layer with the filtered and sorted features
+    conflationLayer.clearLayers();
+    conflationLayer.addData({
+        type: 'FeatureCollection',
+        features: filteredFeatures
+    });
+
+    // Disable the scoreFilterControl
+    disableScoreFilterControl();
+}
+
+function disableScoreFilterControl() {
+    // uncheck scoreFilterControl
+    document.getElementById('scoreFilter08').checked = false;
+    document.getElementById('scoreFilterNull').checked = false;
+
+    // disable all checkboxes in the scoreFilterControl
+    document.getElementById('scoreFilter08').disabled = true;
+    document.getElementById('scoreFilter05_08').disabled = true;
+    document.getElementById('scoreFilterLt05').disabled = true;
+    document.getElementById('scoreFilterNull').disabled = true;
+}
