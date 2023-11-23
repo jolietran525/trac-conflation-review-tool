@@ -21,7 +21,7 @@ let tiles_lght = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/{til
     attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://cartodb.com/attributions">CARTO</a>',
     subdomains: 'abcd',
     tileType: 'light_all',
-    maxZoom: 19
+    maxZoom: 20
     }
 );
 
@@ -44,7 +44,7 @@ let tiles_vgr = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/{tile
     attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://cartodb.com/attributions">CARTO</a>',
       subdomains: 'abcd',
     tileType: 'voyager_labels_under',
-      maxZoom: 19
+      maxZoom: 20
   });
 
 
@@ -75,15 +75,6 @@ let baseLayers = {
     };
 let overlayLayers = {};
 let layerControl = L.control.layers(baseLayers,overlayLayers, {position: 'topleft'}).addTo(map);
-
-// add title
-// let title = L.control({position: 'topleft'});
-// title.onAdd = function(mp) {
-//     let _tdiv = L.DomUtil.create('div', 'title');
-//     _tdiv.innerHTML = '<h2></h2>'
-//     return _tdiv;
-// }
-// title.addTo(map);
 
 let osmLayer;
 const t_osm = d3.json("data/metrics_osm_2.geojson");
@@ -117,16 +108,16 @@ let filterConditions = {
     score_null: true
 };
 
+function getDefaultStyle(conflated_score) {
+    return {
+        weight: 5,
+        opacity: 0.5,
+        color: score_bin(conflated_score)
+    };
+}
+
 t_conflation.then(conflation => {
     let highlightedFeature = null; 
-
-    function getDefaultStyle(conflated_score) {
-        return {
-            weight: 5,
-            opacity: 0.5,
-            color: score_bin(conflated_score)
-        };
-    }
     
     // add features to map
     conflationLayer = L.geoJSON(conflation, {
@@ -277,6 +268,144 @@ layerLegend.onAdd = function (map) {
 layerLegend.addTo(map);
 
 
+
+
+// Side Panel
+function openNav() {
+    document.getElementById("side-panel").style.display = "block";
+    document.getElementById("side-panel").style.width = "400px";
+    document.getElementsByClassName("openbtn")[0].style.display = "none";
+}
+
+function closeNav() {
+    document.getElementById("side-panel").style.display = "none";
+    document.getElementsByClassName("openbtn")[0].style.display = "block";
+}
+
+// Add these global variables to keep track of the current index and highlighted feature
+let currentIndex = 0;
+let highlightedFeature = null;
+let filteredFeatures;
+
+function filterAndSort() {
+    // Filter features based on conflated_score
+    filteredFeatures = conflationLayer.toGeoJSON().features.filter(feature => {
+        const score = feature.properties.conflated_score;
+        return (score < 0.8 && score !== null); // Adjust the condition as needed
+    });
+
+    // Sort the filtered features based on osm_id, start_end_seg, and sdot_objectid
+    filteredFeatures.sort((a, b) => {
+        if (a.properties.osm_id !== b.properties.osm_id) {
+            return a.properties.osm_id - b.properties.osm_id;
+        } else if (a.properties.start_end_seg !== b.properties.start_end_seg) {
+            return a.properties.start_end_seg - b.properties.start_end_seg;
+        } else {
+            return a.properties.sdot_objectid - b.properties.sdot_objectid; }
+    });
+
+    // Update the GeoJSON layer with the filtered and sorted features
+    conflationLayer.clearLayers();
+    conflationLayer.addData({
+        type: 'FeatureCollection',
+        features: filteredFeatures
+    });
+
+    // Disable the scoreFilterControl
+    disableScoreFilterControl();
+
+    // Highlight and zoom to the first feature
+    highlightAndZoomToFeature(filteredFeatures[0]);
+}
+
+// Function to highlight and zoom to a specific feature
+function highlightAndZoomToFeature(feature) {
+    // Reset the style of the previously highlighted feature
+    if (highlightedFeature) {
+        highlightedFeature.setStyle(getDefaultStyle(highlightedFeature.feature.properties.conflated_score));
+    }
+
+    // Find the layer corresponding to the feature in the conflationLayer
+    const layer = conflationLayer.getLayers().find(layer => layer.feature === feature);
+
+    if (layer) {
+        // Highlight the clicked feature in the conflation layer
+        layer.setStyle({
+            weight: 10,           // Adjust the weight to highlight
+            opacity: 0.7,         // Adjust the opacity to highlight
+            color: score_bin(feature.properties.conflated_score)    // Set a different color for highlighting
+        });
+
+        map.fitBounds(layer.getBounds(), { maxZoom: 18 });
+
+        // Set the currently highlighted feature
+        highlightedFeature = layer;
+
+        // Update the index to the current feature
+        currentIndex = filteredFeatures.indexOf(feature);
+
+        // Highlight the features in the sdot and osm layers with matching IDs
+        highlightFeaturesInSDOT(feature.properties.sdot_objectid);
+        highlightFeaturesInOSM(feature.properties.osm_id);
+
+        // popup_attributes(highlightedFeature.feature, highlightedFeature);
+
+        // Build an HTML table for the feature's properties
+        const tableHTML = buildTableHTML(feature.properties);
+
+        // Append the table to a specific element in your HTML (change 'table-container' to your desired element ID)
+        const tableContainer = document.getElementById('table-container');
+        if (tableContainer) {
+            tableContainer.innerHTML = tableHTML;
+        } else {
+            console.error("Table container element not found.");
+        }
+
+    } else {
+        console.error("Layer not found for the feature:", feature);
+    }
+}
+
+// Function to build an HTML table based on feature properties
+function buildTableHTML(properties) {
+    let html = '<table>';
+    for (attrib in properties) {
+        html += '<tr><td>' + attrib + '</td><td>' + properties[attrib] + '</td></tr>';
+    }
+    html += '</table>';
+    return html;
+}
+
+// Function to handle the next button
+function nextFeature() {
+    if (currentIndex < filteredFeatures.length - 1) {
+        currentIndex++;
+        const nextFeature = filteredFeatures[currentIndex];
+        highlightAndZoomToFeature(nextFeature);
+    }
+}
+
+// Function to handle the back button
+function previousFeature() {
+    if (currentIndex > 0) {
+        currentIndex--;
+        const previousFeature = filteredFeatures[currentIndex];
+        highlightAndZoomToFeature(previousFeature);
+    }
+}
+
+function disableScoreFilterControl() {
+    // uncheck scoreFilterControl
+    document.getElementById('scoreFilter08').checked = false;
+    document.getElementById('scoreFilterNull').checked = false;
+
+    // disable all checkboxes in the scoreFilterControl
+    document.getElementById('scoreFilter08').disabled = true;
+    document.getElementById('scoreFilter05_08').disabled = true;
+    document.getElementById('scoreFilterLt05').disabled = true;
+    document.getElementById('scoreFilterNull').disabled = true;
+}
+
 // Function to highlight features in the sdot layer with a specific object ID
 function highlightFeaturesInSDOT(sdot_objectid) {
     sdotLayer.eachLayer(function (layer) {
@@ -315,57 +444,4 @@ function highlightFeaturesInOSM(osm_id) {
             })
         }
     });
-}
-
-
-// Side Panel
-/* Set the width of the sidebar to 250px and the left margin of the page content to 250px */
-function openNav() {
-    document.getElementById("side-panel").style.display = "block";
-    document.getElementById("side-panel").style.width = "400px";
-    document.getElementsByClassName("openbtn")[0].style.display = "none";
-}
-
-function closeNav() {
-    document.getElementById("side-panel").style.display = "none";
-    document.getElementsByClassName("openbtn")[0].style.display = "block";
-}
-
-function filterAndSort() {
-    // Filter features based on conflated_score
-    const filteredFeatures = conflationLayer.toGeoJSON().features.filter(feature => {
-        const score = feature.properties.conflated_score;
-        return (score < 0.8 && score !== null); // Adjust the condition as needed
-    });
-
-    // Sort the filtered features based on osm_id and start_end_seg
-    filteredFeatures.sort((a, b) => {
-        if (a.properties.osm_id !== b.properties.osm_id) {
-            return a.properties.osm_id - b.properties.osm_id;
-        } else {
-            return a.properties.start_end_seg - b.properties.start_end_seg;
-        }
-    });
-
-    // Update the GeoJSON layer with the filtered and sorted features
-    conflationLayer.clearLayers();
-    conflationLayer.addData({
-        type: 'FeatureCollection',
-        features: filteredFeatures
-    });
-
-    // Disable the scoreFilterControl
-    disableScoreFilterControl();
-}
-
-function disableScoreFilterControl() {
-    // uncheck scoreFilterControl
-    document.getElementById('scoreFilter08').checked = false;
-    document.getElementById('scoreFilterNull').checked = false;
-
-    // disable all checkboxes in the scoreFilterControl
-    document.getElementById('scoreFilter08').disabled = true;
-    document.getElementById('scoreFilter05_08').disabled = true;
-    document.getElementById('scoreFilterLt05').disabled = true;
-    document.getElementById('scoreFilterNull').disabled = true;
 }

@@ -11,14 +11,14 @@ body, p, ol, ul, td {
 /* https://web.dev/one-line-layouts/ */
 body {
   height: 100%;
-  width: 100%;}
+  width: 100%;
+}
 
-main {overflow: auto;}
 
 main {
   padding: 0;
   margin: 0;
-  min-height: 100vh;
+  height: 100vh; /* Change min-height to height */
   width: 100%;
   display: flex;
   flex-direction: row;
@@ -78,24 +78,23 @@ td:first-child {font-weight: bold;}
 
 #side-panel {
   flex-basis: 400px;
-  background-color: #111; /* Black*/
+  background-color: rgba(255, 255, 255, 0.8); 
   transition: 1s; /* 0.5 second transition effect to slide in the sidebar */
-  overflow: hidden; 
   display: none;
+  overflow-y: scroll;
 }
 
 #side-panel a {
   padding: 10px;
   text-decoration: none;
   font-size: 25px;
-  color: #818181;
+  color: #494949;
   display: block;
   transition: 0.3s;
-  overflow: hidden;
 }
 
 #side-panel a:hover, a:hover {
-  color: #f1f1f1;
+  color: #666666;
   transition: 0.3s;
 }
 
@@ -119,9 +118,27 @@ td:first-child {font-weight: bold;}
   font-size: 25px;
   cursor: pointer;
   background: transparent;
-  color: #818181;
+  color: #494949;
   padding: 10px;
   z-index: 3;
   border: none;
   transition: 0.3s;
+}
+
+#feature-navigation {
+  display: flex;
+  margin: 10px 0px 10px 0px;
+}
+
+#back-button,
+#next-button {
+  flex: 1;
+  background-color:  rgb(130, 195, 255);
+  border: 0.5px solid rgba(61, 61, 61, 0.503) ;
+  cursor: pointer;
+}
+
+#back-button:hover,
+#next-button:hover {
+  background-color:  rgb(149, 203, 254);
 }
