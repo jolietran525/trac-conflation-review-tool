@@ -212,7 +212,7 @@ t_conflation.then(data => {
                         color: score_bin(layer.feature.properties.conflated_score)    // Set a different color for highlighting
                     });
         
-                    map.fitBounds(layer.getBounds(), { maxZoom: 18 });
+                    map.flyToBounds(layer.getBounds(), { maxZoom: 18, duration: 1.5 });
 
                     // Set the currently highlighted feature
                     highlightedFeature = layer;
@@ -238,6 +238,7 @@ t_conflation.then(data => {
     sdotLayer.addTo(map);
     conflationLayer.addTo(map);
     
+
     map.fitBounds(conflationLayer.getBounds());
 
    
@@ -336,6 +337,8 @@ function closeNav() {
 /* -------- MODES: REVIEW vs VIEW -------- */
 // Add these global variables to keep track of the current index and highlighted feature
 let currentIndex = 0;
+let currentOSM;
+let currentSDOT;
 let highlightedFeature = null;
 let filteredFeatures;
 
@@ -360,8 +363,9 @@ function filterAndSort() {
         // Update button text
         if (filterButton) {
             filterButton.innerText = 'View Features';
+            filterButton.className = 'review';
         } 
-        
+
         // Filter features based on conflated_score
         filteredFeatures = conflation.features.filter(feature => {
             const score = feature.properties.conflated_score;
@@ -385,32 +389,30 @@ function filterAndSort() {
             features: filteredFeatures
         });
 
-        console.log(filteredFeatures.length);
-        console.log(currentIndex);
+        currentOSM = filteredFeatures[currentIndex].properties.osm_id;
+        currentSDOT = filteredFeatures[currentIndex].properties.sdot_objectid;
 
-        // Turn on back and next feature button
-        document.getElementById("back-button").style.display = "block";
-        document.getElementById("next-button").style.display = "block";
-        
+        // Turn on elements
+        document.getElementById("review-mode").style.display = "block";
+
         // Disable the scoreFilterControl
         disableScoreFilterControl();
 
         // Highlight and zoom to the current (if not first) feature
         highlightAndZoomToFeature(filteredFeatures[currentIndex]);
+
+        showOSM()
     }
     else {
         mode = 'view';
 
-        // Turn on back and next feature button
-        document.getElementById("back-button").style.display = "none";
-        document.getElementById("next-button").style.display = "none";
-
-        // clear the table
-        document.getElementById("table-container").innerHTML = "";
+        // Turn off elements
+        document.getElementById("review-mode").style.display = "none";
 
         // Update button text
         if (filterButton) {
             filterButton.innerText = 'Review Features';
+            filterButton.className = 'view';
         }
 
         // Reload the original GeoJSON data into the conflationLayer
@@ -420,7 +422,7 @@ function filterAndSort() {
             features: conflation.features
         });
 
-        map.fitBounds(conflationLayer.getBounds());
+        map.flyToBounds(conflationLayer.getBounds(), { duration: 1.5 });
 
         // Enable the scoreFilterControl
         enableScoreFilterControl();
@@ -445,17 +447,21 @@ function highlightAndZoomToFeature(feature) {
             color: score_bin(feature.properties.conflated_score)    // Set a different color for highlighting
         });
 
-        map.fitBounds(layer.getBounds(), { maxZoom: 18 });
+        map.flyToBounds(layer.getBounds(), { maxZoom: 18, duration: 1.5 });
 
         // Set the currently highlighted feature
         highlightedFeature = layer;
 
         // Update the index to the current feature
         currentIndex = filteredFeatures.indexOf(feature);
+        currentOSM = filteredFeatures[currentIndex].properties.osm_id;
+        currentSDOT = filteredFeatures[currentIndex].properties.sdot_objectid;
 
         // Highlight the features in the sdot and osm layers with matching IDs
         highlightFeaturesInSDOT(feature.properties.sdot_objectid);
         highlightFeaturesInOSM(feature.properties.osm_id);
+
+        showOSM();
 
         // Build an HTML table for the feature's properties
         const tableHTML = buildTableHTML(feature.properties);
@@ -506,12 +512,22 @@ function nextFeature() {
         const nextFeature = filteredFeatures[currentIndex];
         highlightAndZoomToFeature(nextFeature);
     }
+    if (currentIndex == filteredFeatures.length - 1) {
+        currentIndex = 0;
+        const nextFeature = filteredFeatures[currentIndex];
+        highlightAndZoomToFeature(nextFeature);
+    }
 }
 
 // Function to handle the back button
 function previousFeature() {
     if (currentIndex > 0) {
         currentIndex--;
+        const previousFeature = filteredFeatures[currentIndex];
+        highlightAndZoomToFeature(previousFeature);
+    }
+    else if (currentIndex == 0) {
+        currentIndex = (filteredFeatures.length - 1);
         const previousFeature = filteredFeatures[currentIndex];
         highlightAndZoomToFeature(previousFeature);
     }
@@ -533,3 +549,50 @@ function enableScoreFilterControl() {
     document.getElementById('scoreFilterNull').checked = true;
 }
 
+function showOSM() {
+    if(document.getElementById("show-all-osm").checked === true){
+        // given this sdot id, we want to get all the osm that share the same sdot
+        allOSMgivenSDOT = conflation.features.filter(feature => {
+            const sdot_all = feature.properties.sdot_objectid;
+            return (sdot_all == currentSDOT && feature != filteredFeatures); // Adjust the condition as needed
+        });
+        console.log(allOSMgivenSDOT[0].properties.osm_id);
+        highlightAllOSM(allOSMgivenSDOT);
+    } else {
+        highlightFeaturesInOSM(currentOSM);
+    }
+  }
+
+
+function highlightAllOSM(features) {
+        
+        // Loop through each OSM feature and highlight it on the map
+        features.forEach(osmFeature => {
+            const osm_id = osmFeature.properties.osm_id;
+    
+            // Find the OSM layer feature with the matching osm_id
+            const osmLayerFeature = osmLayer.getLayers().find(layer => layer.feature.properties.osm_id === osm_id);
+    
+            // Highlight the OSM layer feature
+            if (osmLayerFeature) {
+                osmLayerFeature.setStyle({
+                    // Add your highlight style here
+                    weight: 10,
+                    opacity: 0.7,
+                    color: "#00ff00" // Change the color as needed
+                });
+            }
+        });
+}
+
+
+
+// function showSDOT() {
+//     if(document.getElementById("show-all-sdot").checked === true){
+//         currentOSM = filteredFeatures[currentIndex].properties.osm_id;
+//         currentSDOT = filteredFeatures[currentIndex].properties.sdot_objectid;
+
+//     } else {
+      
+//     }
+//   }

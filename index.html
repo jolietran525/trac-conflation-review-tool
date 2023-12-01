@@ -49,19 +49,41 @@
     <div id="side-panel">
       <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&#10006;</a>
       <div class="content">
+        
         <button id="filter-button" class="view" onclick="filterAndSort()">Review Features</button>
 
+
         <!-- Only active when in review mode -->
-        <div id="feature-length"></div>
-        
-        <div id="feature-navigation">
-          <button onclick="previousFeature()" id="back-button"><i class="fa fa-backward"></i></button>
-          <button onclick="nextFeature()" id="next-button"><i class="fa fa-forward"></i></button>
+        <div id="review-mode">
+          <div id="feature-length"></div>
+          
+          <div id="feature-navigation">
+            <button onclick="previousFeature()" id="back-button"><i class="fa fa-backward"></i></button>
+            <button onclick="nextFeature()" id="next-button"><i class="fa fa-forward"></i></button>
+          </div>
+
+          <div id="table-container"> </div>
+
+          <div id="toggle-switch">
+            <div id="show-osm">
+              <p> Show all OSM segments that conflate with this SDOT </p>
+              <label class="switch" >
+                <input type="checkbox" id="show-all-osm" onchange="showOSM()" unchecked>
+                <span class="slider"></span>
+              </label>  
+            </div>
+
+            <div id="show-sdot">
+              <p> Show all SDOT segments that conflate with this OSM </p>
+              <label class="switch" >
+                <input type="checkbox" id="show-all-sdot" onchange="showSDOT()" unchecked>
+                <span class="slider"></span>
+              </label>  
+            </div>
+                
+          </div>
         </div>
-
-        <div id="table-container"> </div>
-
-        <!--  -->
+          
       </div>
       
     </div>
