@@ -1,22 +1,7 @@
-function score_bin(s) {
-    if (s === null) { return '#999'; }
-    else if (s >= 0.8) { return '#090'; }
-    else if (s >= 0.5) { return '#c90'; }
-    else if (s >= 0) { return '#c00'; }
-    else { return '#999'; }
-}
-
-function popup_attributes(feature, layer) {
-    let html = '<table>';
-    for (attrib in feature.properties) {
-        html += '<tr><td>' + attrib + '</td><td>' + feature.properties[attrib] + '</td></tr>';
-    }
-    layer.bindPopup(html + '</table>');
-}
-
 let map = L.map('map', {zoomControl: false}).setView([47.60, -122.33], 12);
 
-// cartodb tiles - types: positron: light_[all | nolabels], dark_matter: dark_[all | nolabels]
+
+/* ---------------------- MAP TILES ---------------------- */
 let tiles_lght = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/{tileType}/{z}/{x}/{y}{r}.png', {
     attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://cartodb.com/attributions">CARTO</a>',
     subdomains: 'abcd',
@@ -59,23 +44,41 @@ let tiles_ewt = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/service
   });
 
 
-// default type
+// default tile
 tiles_lght.addTo(map);
 
-// Control
+let baseLayers = {
+    "Light (CartoDB)": tiles_lght,
+    "Dark (CartoDB)": tiles_drk,
+    "Color (Voyager)": tiles_vgr,
+    "Satellite (ESRI)":  tiles_ewi,
+    "Terrain (ESRI)": tiles_ewt
+};
+
+
+/* ---------------------- MAP CONTROL ---------------------- */
 L.control.zoom({position: 'topleft'}).addTo(map);
 L.control.scale({maxWidth: 200, position: 'bottomright'}).addTo(map);
 
-let baseLayers = {
-      "Light (CartoDB)": tiles_lght,
-      "Dark (CartoDB)": tiles_drk,
-      "Color (Voyager)": tiles_vgr,
-      "Satellite (ESRI)":  tiles_ewi,
-      "Terrain (ESRI)": tiles_ewt
-    };
 let overlayLayers = {};
 let layerControl = L.control.layers(baseLayers,overlayLayers, {position: 'topleft'}).addTo(map);
 
+let scoreFilterControl = L.control({ position: 'bottomleft' });
+
+let layerLegend = L.control({ position: 'bottomleft' });
+
+
+/* ---------------------- MAP LAYERS ---------------------- */
+/* -------- FUNCTIONS FOR ALL LAYER -------- */
+function popup_attributes(feature, layer) {
+    let html = '<table>';
+    for (attrib in feature.properties) {
+        html += '<tr><td>' + attrib + '</td><td>' + feature.properties[attrib] + '</td></tr>';
+    }
+    layer.bindPopup(html + '</table>');
+}
+
+/* -------- OSM LAYER -------- */
 let osmLayer;
 const t_osm = d3.json("data/metrics_osm_2.geojson");
 t_osm.then(osm => {
@@ -86,10 +89,32 @@ t_osm.then(osm => {
     });
 });
 
+// Function to highlight features in the osm layer with a specific osm_id
+function highlightFeaturesInOSM(osm_id) {
+    osmLayer.eachLayer(function (layer) {
+        // Check if the feature has a property named 'osm_id' and if it matches the provided osmId
+        if (layer.feature.properties.osm_id === osm_id) {
+            // Apply a highlight style to the matching feature
+            layer.setStyle({
+                weight: 15,          // Adjust the weight to highlight
+                opacity: 1,         // Adjust the opacity to highlight
+                color: "#BAD4E4"    // Set a different color for highlighting
+            });
+        } else {
+            layer.setStyle({
+                weight: 5, opacity: 0.5, color:  "#BAD4E4"
+            })
+        }
+    });
+}
 
+
+/* -------- SDOT LAYER -------- */
 let sdotLayer;
+let sdot;
 const t_sdot = d3.json("data/metrics_sdot_2.geojson");
-t_sdot.then(sdot => {
+t_sdot.then(data => {
+    sdot = data;
     // add features to map
     sdotLayer = L.geoJSON(sdot, {
         style: function(e) { return { weight: 5, opacity: 0.5, color:  "#E4C1BA" } },
@@ -97,9 +122,40 @@ t_sdot.then(sdot => {
     });
 });
 
+// Function to highlight features in the sdot layer with a specific object ID
+function highlightFeaturesInSDOT(sdot_objectid) {
+    sdotLayer.eachLayer(function (layer) {
+        // Check if the feature has a property named 'sdot_objectid' and if it matches the provided objectId
+        if (layer.feature.properties.objectid === sdot_objectid) {
+            // Apply a highlight style to the matching feature
+            layer.setStyle({
+                weight: 15,          // Adjust the weight to highlight
+                opacity: 1,         // Adjust the opacity to highlight
+                color: "#E4C1BA"    // Set a different color for highlighting
+            });
+        } else {
+            layer.setStyle ({
+                weight: 5,
+                opacity: 0.5,
+                color:  "#E4C1BA"
+            })
+        }
+    });
+}
+
+
+/* -------- CONFLATION LAYER -------- */
 let conflationLayer;
-// get edges and add to map
-const t_conflation = d3.json("data/conflated_osm_2.geojson");
+let conflation;
+let mode = 'view'; // 'view' mode by default
+
+function score_bin(s) {
+    if (s === null) { return '#999'; }
+    else if (s >= 0.8) { return '#090'; }
+    else if (s >= 0.5) { return '#c90'; }
+    else if (s >= 0) { return '#c00'; }
+    else { return '#999'; }
+}
 
 let filterConditions = {
     score_08: true,
@@ -116,7 +172,9 @@ function getDefaultStyle(conflated_score) {
     };
 }
 
-t_conflation.then(conflation => {
+const t_conflation = d3.json("data/conflated_osm_2.geojson");
+t_conflation.then(data => {
+    conflation = data;
     let highlightedFeature = null; 
     
     // add features to map
@@ -140,33 +198,37 @@ t_conflation.then(conflation => {
                 });
             });
 
-
             layer.on('click', function (e) {
-                // Reset the style of the previously highlighted feature
-                if (highlightedFeature) {
-                    highlightedFeature.setStyle(getDefaultStyle(highlightedFeature.feature.properties.conflated_score));
+                if (mode === 'view') {
+                    // Reset the style of the previously highlighted feature
+                    if (highlightedFeature) {
+                        highlightedFeature.setStyle(getDefaultStyle(highlightedFeature.feature.properties.conflated_score));
+                    }
+        
+                    // Highlight the clicked feature in the conflation layer
+                    layer.setStyle({
+                        weight: 10,           // Adjust the weight to highlight
+                        opacity: 0.7,         // Adjust the opacity to highlight
+                        color: score_bin(layer.feature.properties.conflated_score)    // Set a different color for highlighting
+                    });
+        
+                    map.fitBounds(layer.getBounds(), { maxZoom: 18 });
+
+                    // Set the currently highlighted feature
+                    highlightedFeature = layer;
+                    
+                    // Get the sdot_objectid and osm_id from the clicked feature
+                    const sdot_objectid = feature.properties.sdot_objectid;
+                    const osm_id = feature.properties.osm_id;
+                    // Highlight the features in the sdot and osm layers with matching IDs
+                    highlightFeaturesInSDOT(sdot_objectid);
+                    highlightFeaturesInOSM(osm_id);
+                    popup_attributes(highlightedFeature.feature, highlightedFeature);
                 }
-    
-                // Highlight the clicked feature in the conflation layer
-                layer.setStyle({
-                    weight: 10,           // Adjust the weight to highlight
-                    opacity: 0.7,         // Adjust the opacity to highlight
-                    color: score_bin(layer.feature.properties.conflated_score)    // Set a different color for highlighting
-                });
-    
-                map.fitBounds(layer.getBounds(), { maxZoom: 18 });
-
-                // Set the currently highlighted feature
-                highlightedFeature = layer;
                 
-                // Get the sdot_objectid and osm_id from the clicked feature
-                const sdot_objectid = feature.properties.sdot_objectid;
-                const osm_id = feature.properties.osm_id;
-                // Highlight the features in the sdot and osm layers with matching IDs
-                highlightFeaturesInSDOT(sdot_objectid);
-                highlightFeaturesInOSM(osm_id);
-
-                popup_attributes(highlightedFeature.feature, highlightedFeature);
+                else {
+                    popup_attributes(layer.feature, layer);
+                }
             });
         }
     });
@@ -176,101 +238,89 @@ t_conflation.then(conflation => {
     sdotLayer.addTo(map);
     conflationLayer.addTo(map);
     
-    map.fitBounds(sdotLayer.getBounds());
-    
-    // add layers to layer control
-    layerControl.addOverlay(osmLayer,"OSM Features");
-    layerControl.addOverlay(sdotLayer,"SDOT Features");
-    layerControl.addOverlay(conflationLayer,"Conflation Features");
+    map.fitBounds(conflationLayer.getBounds());
 
-    // Add a control to toggle feature visibility based on score conditions
-    let scoreFilterControl = L.control({ position: 'bottomleft' });
-
-    scoreFilterControl.onAdd = function (map) {
-        let div = L.DomUtil.create('div', 'score-filter-control');
-        div.innerHTML += '<label>Filter Features:</label><br>';
-        div.innerHTML += '<input type="checkbox" id="scoreFilter08" checked><label>Score >= 0.8</label><br>';
-        div.innerHTML += '<input type="checkbox" id="scoreFilter05_08" checked><label>Score >=0.5</label><br>';
-        div.innerHTML += '<input type="checkbox" id="scoreFilterLt05" checked><label>Score >= 0</label><br>';
-        div.innerHTML += '<input type="checkbox" id="scoreFilterNull" checked><label>Score NULL</label><br>';
-
-        // Add event listeners to the checkboxes
-        div.querySelector('#scoreFilter08').addEventListener('change', function () {
-            filterConditions.score_08 = this.checked;
-            updateFilteredFeatures();
-        });
-
-        div.querySelector('#scoreFilter05_08').addEventListener('change', function () {
-            filterConditions.score_05_08 = this.checked;
-            updateFilteredFeatures();
-        });
-
-        div.querySelector('#scoreFilterLt05').addEventListener('change', function () {
-            filterConditions.score_lt_05 = this.checked;
-            updateFilteredFeatures();
-        });
-
-        div.querySelector('#scoreFilterNull').addEventListener('change', function () {
-            filterConditions.score_null = this.checked;
-            updateFilteredFeatures();
-        });
-
-        return div;
-    };
-    scoreFilterControl.addTo(map);
-
-    function updateFilteredFeatures() {
-        const filteredFeatures = conflation.features.filter(feature => {
-            const score = feature.properties.conflated_score;
-
-            if (filterConditions.score_null && score === null)  {
-                return true;
-            } else if (filterConditions.score_08 && score >= 0.8) {
-                return true;
-            } else if (filterConditions.score_05_08 && score >= 0.5 && score < 0.8) {
-                return true;
-            } else if (filterConditions.score_lt_05 && score >= 0 && score < 0.5 && score !== null) {
-                return true;
-            }  else {
-                return false;
-            }
-        });
-
-        // Update the GeoJSON layer with the new filtered features
-        conflationLayer.clearLayers();
-        conflationLayer.addData({
-            type: 'FeatureCollection',
-            features: filteredFeatures
-        });
-    }
+   
 });
 
-
-// Legend
-let layerLegend = L.control({ position: 'bottomleft' });
+ /* -------- LEGEND -------- */
+    // Add a legend control to toggle feature visibility based on layer and score conditions
 layerLegend.onAdd = function (map) {
     let div = L.DomUtil.create('div', 'legend');
     div.innerHTML += '<h4>SDOT Layer</h4>';
-    div.innerHTML += '<span class="legend-color" style="background-color: #E4C1BA"></span><label>Default</label><br>';
+    div.innerHTML += '<input type="checkbox" id="sdotLayerControl" checked><span class="legend-color" style="background-color: #E4C1BA"></span><label>SDOT</label><br><br>';
 
     // Add more legend items as needed for different styles/colors
     div.innerHTML += '<h4>Conflation Layer</h4>';
-    div.innerHTML += '<span class="legend-color" style="background-color: #090"></span><label>Score > 0.8</label><br>';
-    div.innerHTML += '<span class="legend-color" style="background-color: #c90"></span><label>Score > 0.5</label><br>';
-    div.innerHTML += '<span class="legend-color" style="background-color: #c00"></span><label>Score >= 0</label><br>';
-    div.innerHTML += '<span class="legend-color" style="background-color: #999"></span><label>Score NULL</label><br>';
+    div.innerHTML += '<input type="checkbox" id="scoreFilter08" checked><span class="legend-color" style="background-color: #090"></span><label>Score >= 80</label><br>';
+    div.innerHTML += '<input type="checkbox" id="scoreFilter05_08" checked><span class="legend-color" style="background-color: #c90"></span><label>Score >= 50</label><br>';
+    div.innerHTML += '<input type="checkbox" id="scoreFilterLt05" checked><span class="legend-color" style="background-color: #c00"></span><label>Score >= 10</label><br>';
+    div.innerHTML += '<input type="checkbox" id="scoreFilterNull" checked><span class="legend-color" style="background-color: #999"></span><label>Score NULL</label><br><br>';
 
     div.innerHTML += '<h4>OSM Layer</h4>';
-    div.innerHTML += '<span class="legend-color" style="background-color: #BAD4E4"></span><label>Default</label><br>';
+    div.innerHTML += '<input type="checkbox" id="osmLayerControl" checked><span class="legend-color" style="background-color: #BAD4E4"></span><label>OSM</label><br>';
+    
+    // Add event listeners to the layer control checkboxes
+    div.querySelector('#osmLayerControl').addEventListener('change', function () {
+        map.removeLayer(osmLayer);
+        this.checked ? map.addLayer(osmLayer) : null;
+    });
+
+    div.querySelector('#sdotLayerControl').addEventListener('change', function () {
+        map.removeLayer(sdotLayer);
+        this.checked ? map.addLayer(sdotLayer) : null;
+    });
+
+    div.querySelector('#scoreFilter08').addEventListener('change', function () {
+        filterConditions.score_08 = this.checked;
+        updateFilteredFeatures();
+    });
+
+    div.querySelector('#scoreFilter05_08').addEventListener('change', function () {
+        filterConditions.score_05_08 = this.checked;
+        updateFilteredFeatures();
+    });
+
+    div.querySelector('#scoreFilterLt05').addEventListener('change', function () {
+        filterConditions.score_lt_05 = this.checked;
+        updateFilteredFeatures();
+    });
+
+    div.querySelector('#scoreFilterNull').addEventListener('change', function () {
+        filterConditions.score_null = this.checked;
+        updateFilteredFeatures();
+    });
     
     return div;
 };
 layerLegend.addTo(map);
 
+function updateFilteredFeatures() {
+    const filteredFeatures = conflation.features.filter(feature => {
+        const score = feature.properties.conflated_score;
 
+        if (filterConditions.score_null && score === null)  {
+            return true;
+        } else if (filterConditions.score_08 && score >= 0.8) {
+            return true;
+        } else if (filterConditions.score_05_08 && score >= 0.5 && score < 0.8) {
+            return true;
+        } else if (filterConditions.score_lt_05 && score >= 0 && score < 0.5 && score !== null) {
+            return true;
+        }  else {
+            return false;
+        }
+    });
 
+    // Update the GeoJSON layer with the new filtered features
+    conflationLayer.clearLayers();
+    conflationLayer.addData({
+        type: 'FeatureCollection',
+        features: filteredFeatures
+    });
+}
 
-// Side Panel
+/* -------- SIDE PANEL -------- */
 function openNav() {
     document.getElementById("side-panel").style.display = "block";
     document.getElementById("side-panel").style.width = "400px";
@@ -282,40 +332,99 @@ function closeNav() {
     document.getElementsByClassName("openbtn")[0].style.display = "block";
 }
 
+
+/* -------- MODES: REVIEW vs VIEW -------- */
 // Add these global variables to keep track of the current index and highlighted feature
 let currentIndex = 0;
 let highlightedFeature = null;
 let filteredFeatures;
 
 function filterAndSort() {
-    // Filter features based on conflated_score
-    filteredFeatures = conflationLayer.toGeoJSON().features.filter(feature => {
-        const score = feature.properties.conflated_score;
-        return (score < 0.8 && score !== null); // Adjust the condition as needed
-    });
+    const filterButton = document.getElementById("filter-button");
 
-    // Sort the filtered features based on osm_id, start_end_seg, and sdot_objectid
-    filteredFeatures.sort((a, b) => {
-        if (a.properties.osm_id !== b.properties.osm_id) {
-            return a.properties.osm_id - b.properties.osm_id;
-        } else if (a.properties.start_end_seg !== b.properties.start_end_seg) {
-            return a.properties.start_end_seg - b.properties.start_end_seg;
-        } else {
-            return a.properties.sdot_objectid - b.properties.sdot_objectid; }
-    });
+    if (!map.hasLayer(sdotLayer)) {
+        map.addLayer(sdotLayer);
+        document.getElementById('sdotLayerControl').checked = true;
+    }
 
-    // Update the GeoJSON layer with the filtered and sorted features
-    conflationLayer.clearLayers();
-    conflationLayer.addData({
-        type: 'FeatureCollection',
-        features: filteredFeatures
-    });
+    if (!map.hasLayer(osmLayer)) {
+        map.addLayer(osmLayer);
+        document.getElementById('osmLayerControl').checked = true;
+    }
 
-    // Disable the scoreFilterControl
-    disableScoreFilterControl();
 
-    // Highlight and zoom to the first feature
-    highlightAndZoomToFeature(filteredFeatures[0]);
+    if (mode === 'view') {
+        // Toggle mode between 'view' and 'review'
+        mode = 'review';
+
+        // Update button text
+        if (filterButton) {
+            filterButton.innerText = 'View Features';
+        } 
+        
+        // Filter features based on conflated_score
+        filteredFeatures = conflation.features.filter(feature => {
+            const score = feature.properties.conflated_score;
+            return (score < 0.8 && score !== null); // Adjust the condition as needed
+        });
+
+        // Sort the filtered features based on osm_id, start_end_seg, and sdot_objectid
+        filteredFeatures.sort((a, b) => {
+            if (a.properties.osm_id !== b.properties.osm_id) {
+                return a.properties.osm_id - b.properties.osm_id;
+            } else if (a.properties.start_end_seg !== b.properties.start_end_seg) {
+                return a.properties.start_end_seg.localeCompare(b.properties.start_end_seg);
+            } else {
+                return a.properties.sdot_objectid - b.properties.sdot_objectid; }
+        });
+
+        // Update the GeoJSON layer with the filtered and sorted features
+        conflationLayer.clearLayers();
+        conflationLayer.addData({
+            type: 'FeatureCollection',
+            features: filteredFeatures
+        });
+
+        console.log(filteredFeatures.length);
+        console.log(currentIndex);
+
+        // Turn on back and next feature button
+        document.getElementById("back-button").style.display = "block";
+        document.getElementById("next-button").style.display = "block";
+        
+        // Disable the scoreFilterControl
+        disableScoreFilterControl();
+
+        // Highlight and zoom to the current (if not first) feature
+        highlightAndZoomToFeature(filteredFeatures[currentIndex]);
+    }
+    else {
+        mode = 'view';
+
+        // Turn on back and next feature button
+        document.getElementById("back-button").style.display = "none";
+        document.getElementById("next-button").style.display = "none";
+
+        // clear the table
+        document.getElementById("table-container").innerHTML = "";
+
+        // Update button text
+        if (filterButton) {
+            filterButton.innerText = 'Review Features';
+        }
+
+        // Reload the original GeoJSON data into the conflationLayer
+        conflationLayer.clearLayers();
+        conflationLayer.addData({
+            type: 'FeatureCollection',
+            features: conflation.features
+        });
+
+        map.fitBounds(conflationLayer.getBounds());
+
+        // Enable the scoreFilterControl
+        enableScoreFilterControl();
+    }
 }
 
 // Function to highlight and zoom to a specific feature
@@ -348,8 +457,6 @@ function highlightAndZoomToFeature(feature) {
         highlightFeaturesInSDOT(feature.properties.sdot_objectid);
         highlightFeaturesInOSM(feature.properties.osm_id);
 
-        // popup_attributes(highlightedFeature.feature, highlightedFeature);
-
         // Build an HTML table for the feature's properties
         const tableHTML = buildTableHTML(feature.properties);
 
@@ -359,6 +466,16 @@ function highlightAndZoomToFeature(feature) {
             tableContainer.innerHTML = tableHTML;
         } else {
             console.error("Table container element not found.");
+        }
+
+        // Display the length and the current index
+        const indexHTML = currentIndex_length(currentIndex, filteredFeatures.length);
+
+        const indexContainer = document.getElementById('feature-length');
+        if (indexContainer) {
+            indexContainer.innerHTML = indexHTML;
+        } else {
+            console.error("Index container element not found.");
         }
 
     } else {
@@ -373,6 +490,12 @@ function buildTableHTML(properties) {
         html += '<tr><td>' + attrib + '</td><td>' + properties[attrib] + '</td></tr>';
     }
     html += '</table>';
+    return html;
+}
+
+function currentIndex_length(index, length) {
+    let html = '<p>';
+    html += 'Currently on feature ' + (index+1) + ' out of ' + length + ' features. </p>';
     return html;
 }
 
@@ -397,51 +520,16 @@ function previousFeature() {
 function disableScoreFilterControl() {
     // uncheck scoreFilterControl
     document.getElementById('scoreFilter08').checked = false;
+    document.getElementById('scoreFilter05_08').checked = true;
+    document.getElementById('scoreFilterLt05').checked = true;
     document.getElementById('scoreFilterNull').checked = false;
-
-    // disable all checkboxes in the scoreFilterControl
-    document.getElementById('scoreFilter08').disabled = true;
-    document.getElementById('scoreFilter05_08').disabled = true;
-    document.getElementById('scoreFilterLt05').disabled = true;
-    document.getElementById('scoreFilterNull').disabled = true;
 }
 
-// Function to highlight features in the sdot layer with a specific object ID
-function highlightFeaturesInSDOT(sdot_objectid) {
-    sdotLayer.eachLayer(function (layer) {
-        // Check if the feature has a property named 'sdot_objectid' and if it matches the provided objectId
-        if (layer.feature.properties.objectid === sdot_objectid) {
-            // Apply a highlight style to the matching feature
-            layer.setStyle({
-                weight: 15,          // Adjust the weight to highlight
-                opacity: 1,         // Adjust the opacity to highlight
-                color: "#E4C1BA"    // Set a different color for highlighting
-            });
-        } else {
-            layer.setStyle ({
-                weight: 5,
-                opacity: 0.5,
-                color:  "#E4C1BA"
-            })
-        }
-    });
+function enableScoreFilterControl() {
+    // uncheck scoreFilterControl
+    document.getElementById('scoreFilter08').checked = true;
+    document.getElementById('scoreFilter05_08').checked = true;
+    document.getElementById('scoreFilterLt05').checked = true;
+    document.getElementById('scoreFilterNull').checked = true;
 }
 
-// Function to highlight features in the osm layer with a specific osm_id
-function highlightFeaturesInOSM(osm_id) {
-    osmLayer.eachLayer(function (layer) {
-        // Check if the feature has a property named 'osm_id' and if it matches the provided osmId
-        if (layer.feature.properties.osm_id === osm_id) {
-            // Apply a highlight style to the matching feature
-            layer.setStyle({
-                weight: 15,          // Adjust the weight to highlight
-                opacity: 1,         // Adjust the opacity to highlight
-                color: "#BAD4E4"    // Set a different color for highlighting
-            });
-        } else {
-            layer.setStyle({
-                weight: 5, opacity: 0.5, color:  "#BAD4E4"
-            })
-        }
-    });
-}
