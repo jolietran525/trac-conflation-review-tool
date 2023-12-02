@@ -401,7 +401,8 @@ function filterAndSort() {
         // Highlight and zoom to the current (if not first) feature
         highlightAndZoomToFeature(filteredFeatures[currentIndex]);
 
-        showOSM()
+        showOSM();
+        showSDOT();
     }
     else {
         mode = 'view';
@@ -462,6 +463,7 @@ function highlightAndZoomToFeature(feature) {
         highlightFeaturesInOSM(feature.properties.osm_id);
 
         showOSM();
+        showSDOT();
 
         // Build an HTML table for the feature's properties
         const tableHTML = buildTableHTML(feature.properties);
@@ -552,47 +554,69 @@ function enableScoreFilterControl() {
 function showOSM() {
     if(document.getElementById("show-all-osm").checked === true){
         // given this sdot id, we want to get all the osm that share the same sdot
-        allOSMgivenSDOT = conflation.features.filter(feature => {
+        allOSM_givenSDOT = conflation.features.filter(feature => {
             const sdot_all = feature.properties.sdot_objectid;
             return (sdot_all == currentSDOT && feature != filteredFeatures); // Adjust the condition as needed
         });
-        console.log(allOSMgivenSDOT[0].properties.osm_id);
-        highlightAllOSM(allOSMgivenSDOT);
+        highlightAllOSM(allOSM_givenSDOT);
     } else {
         highlightFeaturesInOSM(currentOSM);
     }
-  }
+}
 
 
 function highlightAllOSM(features) {
-        
-        // Loop through each OSM feature and highlight it on the map
-        features.forEach(osmFeature => {
-            const osm_id = osmFeature.properties.osm_id;
-    
-            // Find the OSM layer feature with the matching osm_id
-            const osmLayerFeature = osmLayer.getLayers().find(layer => layer.feature.properties.osm_id === osm_id);
-    
-            // Highlight the OSM layer feature
-            if (osmLayerFeature) {
-                osmLayerFeature.setStyle({
-                    // Add your highlight style here
-                    weight: 10,
-                    opacity: 0.7,
-                    color: "#00ff00" // Change the color as needed
-                });
-            }
-        });
+    // Loop through each OSM feature and highlight it on the map
+    features.forEach(osmFeature => {
+        const osm_id = osmFeature.properties.osm_id;
+
+        // Find the OSM layer feature with the matching osm_id
+        const osmLayerFeature = osmLayer.getLayers().find(layer => layer.feature.properties.osm_id === osm_id);
+
+        // Highlight the OSM layer feature
+        if (osmLayerFeature) {
+            osmLayerFeature.setStyle({
+                // Add your highlight style here
+                weight: 10,
+                opacity: 0.7,
+                color: "#0000ff" // Change the color as needed
+            });
+        }
+    });
 }
 
 
 
-// function showSDOT() {
-//     if(document.getElementById("show-all-sdot").checked === true){
-//         currentOSM = filteredFeatures[currentIndex].properties.osm_id;
-//         currentSDOT = filteredFeatures[currentIndex].properties.sdot_objectid;
+function showSDOT() {
+    if(document.getElementById("show-all-sdot").checked === true){
+        // given this sdot id, we want to get all the osm that share the same sdot
+        allSDOT_giveOSM = conflation.features.filter(feature => {
+            const osm_all = feature.properties.osm_id;
+            return (osm_all == currentOSM && feature != filteredFeatures); // Adjust the condition as needed
+        });
+        highlightAllSDOT(allSDOT_giveOSM);
+    } else {
+        highlightFeaturesInSDOT(currentSDOT);
+    }
+}
 
-//     } else {
-      
-//     }
-//   }
+
+function highlightAllSDOT(features) {
+    // Loop through each OSM feature and highlight it on the map
+    features.forEach(sdotFeature => {
+        const sdot_id = sdotFeature.properties.sdot_objectid;
+
+        // Find the OSM layer feature with the matching osm_id
+        const sdotLayerFeature = sdotLayer.getLayers().find(layer => layer.feature.properties.objectid === sdot_id);
+
+        // Highlight the OSM layer feature
+        if (sdotLayerFeature) {
+            sdotLayerFeature.setStyle({
+                // Add your highlight style here
+                weight: 10,
+                opacity: 0.7,
+                color: "#e856a6" // Change the color as needed
+            });
+        }
+    });
+}
