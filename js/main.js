@@ -325,12 +325,12 @@ function updateFilteredFeatures() {
 function openNav() {
     document.getElementById("side-panel").style.display = "block";
     document.getElementById("side-panel").style.width = "400px";
-    document.getElementsByClassName("openbtn")[0].style.display = "none";
+    document.getElementById("openbtn").style.display = "none";
 }
 
 function closeNav() {
     document.getElementById("side-panel").style.display = "none";
-    document.getElementsByClassName("openbtn")[0].style.display = "block";
+    document.getElementById("openbtn").style.display = "block";
 }
 
 
@@ -394,6 +394,7 @@ function filterAndSort() {
 
         // Turn on elements
         document.getElementById("review-mode").style.display = "block";
+        document.getElementById("focusbtn").style.display = "inline-block";
 
         // Disable the scoreFilterControl
         disableScoreFilterControl();
@@ -409,6 +410,7 @@ function filterAndSort() {
 
         // Turn off elements
         document.getElementById("review-mode").style.display = "none";
+        document.getElementById("focusbtn").style.display = "none";
 
         // Update button text
         if (filterButton) {
@@ -428,6 +430,15 @@ function filterAndSort() {
         // Enable the scoreFilterControl
         enableScoreFilterControl();
     }
+}
+
+function focusOnFeature() {
+    if (highlightedFeature) {
+        const bounds = highlightedFeature.getBounds();
+        // Adjust the duration and maxZoom values as needed
+        map.flyToBounds(bounds, { duration: 1.5, maxZoom: 18 });
+    }
+
 }
 
 // Function to highlight and zoom to a specific feature

@@ -20,7 +20,7 @@
     <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
 
     <!-- font awesome icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <!-- topojson -->
     <!-- script src="https://unpkg.com/topojson@3"></script -->
@@ -37,21 +37,31 @@
 
 <body>
   <main>
-    <div id="map"></div>
+    <div id="map-area">
+      <div id="map"></div>
     
-    <input id="searchbar" onkeyup="search_function()" type="text"
-      name="search" placeholder="Search OSM id.."> 
-    
-    <a href="javascript:void(0)" class="openbtn">
-      <i class="fa fa-bars" onclick="openNav()"></i>
-    </a>
+      <input id="searchbar" onkeyup="search_function()" type="text"
+        name="search" placeholder="Search OSM id.."> 
+      
+      <div class="buttons">
+        <a href="javascript:void(0)" id="openbtn">
+          <i class="fa fa-bars" onclick="openNav()"></i>
+        </a>
+
+        <a href="javascript:void(0)" id="focusbtn" >
+          <!-- <i class="fa-solid fa-arrows" > </i> -->
+          <i class="fa-solid fa-arrows-to-eye" onclick="focusOnFeature()"></i>
+        </a>
+      </div>
+
+    </div>
+
 
     <div id="side-panel">
-      <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&#10006;</a>
+      <a href="javascript:void(0)" id="closebtn" onclick="closeNav()">&#10006;</a>
       <div class="content">
         
         <button id="filter-button" class="view" onclick="filterAndSort()">Review Features</button>
-
 
         <!-- Only active when in review mode -->
         <div id="review-mode">
@@ -80,8 +90,8 @@
                 <span class="slider"></span>
               </label>  
             </div>
-                
           </div>
+
         </div>
           
       </div>
