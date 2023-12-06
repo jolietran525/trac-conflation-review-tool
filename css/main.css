@@ -45,18 +45,66 @@ main {
   z-index: 1;
 }
 
-#searchbar{ 
+.form-container {
   position: absolute; /* or position: absolute; */
   top: 10px; /* Adjust the top position as needed */
   left: 0px; /* Adjust the left position as needed */
-  display: inline-block; 
+  display: flex; 
+  flex-direction: column;
   margin-left: 10%; 
+  z-index: 3;
+  background: none;
+}
+
+#searchbar{ 
+  position: relative; /* or position: absolute; */
+  display: inline-block;
   background: rgb(255, 255, 255, 0.5);
   padding:15px; 
   border: 1px solid rgb(61, 61, 61);
   border-radius: 10px; 
   z-index: 62;
 } 
+
+input[type=text] { 
+  width: 100%; 
+  -webkit-transition: width 0.15s ease-in-out; 
+  transition: width 0.15s ease-in-out; 
+} 
+
+/* When the input field gets focus, 
+    change its width to 100% */
+input[type=text]:focus { 
+ width: 200%; 
+} 
+
+.results-container {
+    position: relative;
+    display: inline-block;
+    background: rgb(255, 255, 255, 0.5);
+    padding:15px; 
+    border: 1px solid rgb(61, 61, 61);
+    border-radius: 10px;
+    width: 200%;
+}
+
+.results-list {
+  z-index: 3;
+}
+
+.results-list li {
+    color: #494949;
+    border-radius: 5px;
+    margin-bottom: 5px; /* Adjust margin as needed */
+    padding: 10px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.results-list li:hover {
+ background-color: rgba(255, 255, 255, 0.9);
+}
+
 
 .legend {
   background-color: white;
@@ -88,17 +136,7 @@ main {
 
 
 
-input[type=text] { 
-   width: 30%; 
-   -webkit-transition: width 0.15s ease-in-out; 
-   transition: width 0.15s ease-in-out; 
-} 
 
-/* When the input field gets focus, 
-     change its width to 100% */
-input[type=text]:focus { 
-  width: 50%; 
-} 
 
 a:visited {color: #666;}
 

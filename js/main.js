@@ -390,7 +390,6 @@ function displayMatchingItems(matchingItems) {
     });
 }
 
-
 /* -------- SIDE PANEL -------- */
 function openNav() {
     document.getElementById("side-panel").style.display = "block";
