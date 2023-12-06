@@ -58,6 +58,36 @@ main {
   z-index: 62;
 } 
 
+.legend {
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  max-width: 200px;
+  z-index: 2;
+}
+
+
+.legend-color {
+  width: 25px;
+  height: 10px;
+  display: inline-block;
+  border: 0.3px solid rgba(61, 61, 61, 0.5) ;
+  margin-right: 5px;
+}
+
+.buttons {
+  position: absolute; /* or position: absolute; */
+  top: 10px; /* Adjust the top position as needed */
+  right: 10px; /* Adjust the left position as needed */
+  display: flex;
+  flex-direction: column;
+  height: max-content;
+  z-index: 2;
+  justify-content: space-between;
+}
+
+
+
 input[type=text] { 
    width: 30%; 
    -webkit-transition: width 0.15s ease-in-out; 
@@ -71,92 +101,6 @@ input[type=text]:focus {
 } 
 
 a:visited {color: #666;}
-
-/* table styles */
-table {
-  display: inline-block;
-  vertical-align: top;
-  /*white-space: nowrap;*/
-  border-collapse: collapse;
-  border-spacing: 0;
-  margin-bottom: 0.5em;
-}
-
-thead, tbody {
-  border: #666 solid;
-  border-width: 2px 0;
-}
-
-tr th:nth-child(even),
-tr td:nth-child(even) {
-  background: rgba(204,204,204,0.4);
-}
-th, td {padding: 0.2em 0.5em;}
-th {
-  text-align: left;
-  border-bottom: 2px #666 solid;
-}
-td {text-align: right;}
-td:first-child {font-weight: bold;}
-
-
-.legend {
-    background-color: white;
-    border: 1px solid #ccc;
-    padding: 10px;
-    max-width: 200px;
-    z-index: 2;
-  }
-
-
-.legend-color {
-    width: 25px;
-    height: 10px;
-    display: inline-block;
-    border: 0.3px solid rgba(61, 61, 61, 0.5) ;
-    margin-right: 5px;
-}
-
-.buttons {
-    position: absolute; /* or position: absolute; */
-    top: 10px; /* Adjust the top position as needed */
-    right: 10px; /* Adjust the left position as needed */
-    display: flex;
-    flex-direction: column;
-    height: max-content;
-    z-index: 2;
-    justify-content: space-between;
-}
-
-#focusbtn, #openbtn {
-    flex-basis: 1;
-    font-size: 25px;
-    cursor: pointer;
-    background: rgb(255, 255, 255, 0.8);
-    border: 1px solid rgb(61, 61, 61, 0.3) ;
-    border-radius: 10px;
-    box-shadow: -3px 0 5px rgba(61, 61, 61, 0.2);
-    color: #494949;
-    padding: 10px;
-    z-index: 3;
-    transition: 0.3s;
-    text-align: center;
-    align-self: stretch;
-    margin: 2px;
-}
-
-#openbtn {
-  display: inline-block;
-}
-
-#focusbtn {
-  display: none;
-}
-
-#focusbtn:hover, #openbtn:hover {
-  color: #59763d;
-  transition: 0.3s;
-}
 
 /* SIDE PANEL AREA */
 
@@ -184,35 +128,6 @@ td:first-child {font-weight: bold;}
 
 #side-panel .content {
   padding: 20px;
-}
-
-#closebtn {
-  top: 10px; /* Adjust the top position as needed */
-  right: 10px; /* Adjust the left position as needed */
-  position: absolute;
-  font-size: 40px;
-  cursor: pointer;
-}
-
-#feature-navigation {
-  display: flex;
-  margin: 10px 0px 10px 0px;
-}
-
-#back-button,
-#next-button {
-  display: block;
-  flex: 1;
-  background-color:  rgb(237, 247, 222);
-  border: 0.5px solid rgba(61, 61, 61, 0.5) ;
-  transition-duration: 0.4s;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-#back-button:hover,
-#next-button:hover {
-  background-color:  rgb(195, 214, 167);
 }
 
 .view {
@@ -257,6 +172,95 @@ td:first-child {font-weight: bold;}
 
 #review-mode {
   display: none;
+}
+
+
+#closebtn {
+  top: 10px; /* Adjust the top position as needed */
+  right: 10px; /* Adjust the left position as needed */
+  position: absolute;
+  font-size: 40px;
+  cursor: pointer;
+}
+
+
+#focusbtn, #openbtn {
+    flex-basis: 1;
+    font-size: 25px;
+    cursor: pointer;
+    background: rgb(255, 255, 255, 0.8);
+    border: 1px solid rgb(61, 61, 61, 0.3) ;
+    border-radius: 10px;
+    box-shadow: -3px 0 5px rgba(61, 61, 61, 0.2);
+    color: #494949;
+    padding: 10px;
+    z-index: 3;
+    transition: 0.3s;
+    text-align: center;
+    align-self: stretch;
+    margin: 2px;
+}
+
+#openbtn {
+  display: inline-block;
+}
+
+#focusbtn {
+  display: none;
+}
+
+#focusbtn:hover, #openbtn:hover {
+  color: #59763d;
+  transition: 0.3s;
+}
+
+/* table styles */
+table {
+  display: inline-block;
+  vertical-align: top;
+  /*white-space: nowrap;*/
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin-bottom: 0.5em;
+}
+
+thead, tbody {
+  border: #666 solid;
+  border-width: 2px 0;
+}
+
+tr th:nth-child(even),
+tr td:nth-child(even) {
+  background: rgba(204,204,204,0.4);
+}
+th, td {padding: 0.2em 0.5em;}
+th {
+  text-align: left;
+  border-bottom: 2px #666 solid;
+}
+td {text-align: right;}
+td:first-child {font-weight: bold;}
+
+
+#feature-navigation {
+  display: flex;
+  margin: 10px 0px 10px 0px;
+}
+
+#back-button,
+#next-button {
+  display: block;
+  flex: 1;
+  background-color:  rgb(237, 247, 222);
+  border: 0.5px solid rgba(61, 61, 61, 0.5) ;
+  transition-duration: 0.4s;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+#back-button:hover,
+#next-button:hover {
+  background-color:  rgb(195, 214, 167);
 }
 
 .switch {
@@ -313,5 +317,3 @@ input:checked + .slider:before {
   -ms-transform: translateX(26px);
   transform: translateX(26px);
 }
-
-

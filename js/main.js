@@ -80,8 +80,10 @@ function popup_attributes(feature, layer) {
 
 /* -------- OSM LAYER -------- */
 let osmLayer;
+let osm;
 const t_osm = d3.json("data/metrics_osm_2.geojson");
-t_osm.then(osm => {
+t_osm.then(data => {
+    osm = data;
     // add features to map
     osmLayer  = L.geoJSON(osm, {
         style: function(e) { return { weight: 5, opacity: 0.8, color:  "#BAD4E4" } },
@@ -172,11 +174,13 @@ function getDefaultStyle(conflated_score) {
     };
 }
 
+let conf_length;
+let osm_ids = [];
 const t_conflation = d3.json("data/conflated_osm_2.geojson");
 t_conflation.then(data => {
     conflation = data;
     let highlightedFeature = null; 
-    
+
     // add features to map
     conflationLayer = L.geoJSON(conflation, {
         style: function (e) {
@@ -237,12 +241,48 @@ t_conflation.then(data => {
     osmLayer.addTo(map);
     sdotLayer.addTo(map);
     conflationLayer.addTo(map);
-    
 
     map.fitBounds(conflationLayer.getBounds());
 
-   
+
+    // get a list of osm_id
+    for (let i = 0; i < conflation.features.length; i++) {
+        osm_ids[i] = conflation.features[i].properties.osm_id;
+    }
 });
+
+
+
+
+// Function to update layer visibility based on the current bounding box
+// function updateLayerVisibility() {
+//     const currentBounds = map.getBounds();
+
+//     // Filter features based on the current bounding box
+//     osmLayer.clearLayers();
+//     osmLayer.addData(filterFeaturesWithinBounds(osm, currentBounds));
+
+//     sdotLayer.clearLayers();
+//     sdotLayer.addData(filterFeaturesWithinBounds(sdot, currentBounds));
+
+//     conflationLayer.clearLayers();
+//     conflationLayer.addData(filterFeaturesWithinBounds(conflation, currentBounds));
+// }
+
+// Function to filter features within a given bounding box
+// function filterFeaturesWithinBounds(data, bounds) {
+//     return {
+//         type: 'FeatureCollection',
+//         features: data.features.filter(feature => bounds.contains([feature.geometry.coordinates[0], feature.geometry.coordinates[1]]))
+//     };
+// }
+
+// // Listen for moveend event (fires when the map view is moved or zoomed)
+// map.on('moveend', updateLayerVisibility);
+
+// Call the function once to set the initial visibility
+// updateLayerVisibility();
+
 
  /* -------- LEGEND -------- */
     // Add a legend control to toggle feature visibility based on layer and score conditions
@@ -320,6 +360,36 @@ function updateFilteredFeatures() {
         features: filteredFeatures
     });
 }
+
+
+/* -------- SEARCH -------- */
+let osm_ids1 = [123, 456, 789, 101112];
+
+
+function search_function() {
+    let input = document.getElementById('searchbar').value.toLowerCase();
+    // Filter the osm_ids array based on the input pattern
+    let matchingItems = osm_ids1.filter(item => item.toString().includes(input));
+
+    // Display the matching items (you can modify this part based on your requirements)
+    displayMatchingItems(matchingItems);
+}
+
+function displayMatchingItems(matchingItems) {
+    // Assuming you have an element with the id "results" to display the matching items
+    let resultsElement = document.getElementById('results');
+
+    // Clear previous results
+    resultsElement.innerHTML = '';
+
+    // Display the matching items
+    matchingItems.forEach(item => {
+        let listItem = document.createElement('li');
+        listItem.textContent = item;
+        resultsElement.appendChild(listItem);
+    });
+}
+
 
 /* -------- SIDE PANEL -------- */
 function openNav() {
