@@ -81,7 +81,7 @@ function popup_attributes(feature, layer) {
 /* -------- OSM LAYER -------- */
 let osmLayer;
 let osm;
-const t_osm = d3.json("data/metrics_osm_2.geojson");
+const t_osm = d3.json("data/metrics_osm_3.geojson");
 t_osm.then(data => {
     osm = data;
     // add features to map
@@ -114,7 +114,7 @@ function highlightFeaturesInOSM(osm_id) {
 /* -------- SDOT LAYER -------- */
 let sdotLayer;
 let sdot;
-const t_sdot = d3.json("data/metrics_sdot_2.geojson");
+const t_sdot = d3.json("data/metrics_sdot_3.geojson");
 t_sdot.then(data => {
     sdot = data;
     // add features to map
@@ -176,7 +176,7 @@ function getDefaultStyle(conflated_score) {
 
 let conf_length;
 let osm_ids = [];
-const t_conflation = d3.json("data/conflated_osm_2.geojson");
+const t_conflation = d3.json("data/conflated_osm_3.geojson");
 t_conflation.then(data => {
     conflation = data;
     let highlightedFeature = null; 
