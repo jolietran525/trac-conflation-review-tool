@@ -371,12 +371,15 @@ function focusFormContainer() {
   
     // Add a class to simulate focus effect
     formContainer.classList.add('focused');
-  
+    
+    document.getElementsByClassName("results-container")[0].style.display = "block";
+    
     // Add an event listener to remove the class when clicking outside the form container
     document.addEventListener('click', function removeFocus(e) {
       if (!formContainer.contains(e.target)) {
         formContainer.classList.remove('focused');
         document.removeEventListener('click', removeFocus);
+        document.getElementsByClassName("results-container")[0].style.display = "none";
       }
     });
   }
