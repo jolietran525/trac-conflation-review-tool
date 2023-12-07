@@ -365,14 +365,45 @@ function updateFilteredFeatures() {
 /* -------- SEARCH -------- */
 let osm_ids1 = [123, 456, 789, 101112];
 
+function focusFormContainer() {
+    // Get the form container element
+    const formContainer = document.querySelector('.form-container');
+  
+    // Add a class to simulate focus effect
+    formContainer.classList.add('focused');
+  
+    // Add an event listener to remove the class when clicking outside the form container
+    document.addEventListener('click', function removeFocus(e) {
+      if (!formContainer.contains(e.target)) {
+        formContainer.classList.remove('focused');
+        document.removeEventListener('click', removeFocus);
+      }
+    });
+  }
+  
 
 function search_function() {
     let input = document.getElementById('searchbar').value.toLowerCase();
-    // Filter the osm_ids array based on the input pattern
-    let matchingItems = osm_ids1.filter(item => item.toString().includes(input));
 
-    // Display the matching items (you can modify this part based on your requirements)
-    displayMatchingItems(matchingItems);
+    if (input.trim() === '') {
+        // If the input is empty, clear the results
+        clearResults();
+        document.getElementsByClassName("results-container")[0].style.display = "none";
+    } else {
+        // Filter the osm_ids array based on the input pattern (starts with)
+        let matchingItems = osm_ids.filter(item => item.toString().startsWith(input));
+        document.getElementsByClassName("results-container")[0].style.display = "block";
+        // Display the matching items
+        displayMatchingItems(matchingItems);
+    }
+}
+
+function clearResults() {
+    // Assuming you have an element with the id "results" to display the matching items
+    let resultsElement = document.getElementById('results');
+
+    // Clear previous results
+    resultsElement.innerHTML = '';
 }
 
 function displayMatchingItems(matchingItems) {
@@ -380,7 +411,7 @@ function displayMatchingItems(matchingItems) {
     let resultsElement = document.getElementById('results');
 
     // Clear previous results
-    resultsElement.innerHTML = '';
+    clearResults();
 
     // Display the matching items
     matchingItems.forEach(item => {
@@ -389,6 +420,7 @@ function displayMatchingItems(matchingItems) {
         resultsElement.appendChild(listItem);
     });
 }
+
 
 /* -------- SIDE PANEL -------- */
 function openNav() {
