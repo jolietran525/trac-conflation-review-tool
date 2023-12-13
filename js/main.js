@@ -155,7 +155,7 @@ function score_bin(s) {
     if (s === null) { return '#999'; }
     else if (s >= 0.8) { return '#090'; }
     else if (s >= 0.5) { return '#c90'; }
-    else if (s >= 0) { return '#c00'; }
+    else if (s > 0) { return '#c00'; }
     else { return '#999'; }
 }
 
@@ -251,39 +251,6 @@ t_conflation.then(data => {
     }
 });
 
-
-
-
-// Function to update layer visibility based on the current bounding box
-// function updateLayerVisibility() {
-//     const currentBounds = map.getBounds();
-
-//     // Filter features based on the current bounding box
-//     osmLayer.clearLayers();
-//     osmLayer.addData(filterFeaturesWithinBounds(osm, currentBounds));
-
-//     sdotLayer.clearLayers();
-//     sdotLayer.addData(filterFeaturesWithinBounds(sdot, currentBounds));
-
-//     conflationLayer.clearLayers();
-//     conflationLayer.addData(filterFeaturesWithinBounds(conflation, currentBounds));
-// }
-
-// Function to filter features within a given bounding box
-// function filterFeaturesWithinBounds(data, bounds) {
-//     return {
-//         type: 'FeatureCollection',
-//         features: data.features.filter(feature => bounds.contains([feature.geometry.coordinates[0], feature.geometry.coordinates[1]]))
-//     };
-// }
-
-// // Listen for moveend event (fires when the map view is moved or zoomed)
-// map.on('moveend', updateLayerVisibility);
-
-// Call the function once to set the initial visibility
-// updateLayerVisibility();
-
-
  /* -------- LEGEND -------- */
     // Add a legend control to toggle feature visibility based on layer and score conditions
 layerLegend.onAdd = function (map) {
@@ -295,7 +262,7 @@ layerLegend.onAdd = function (map) {
     div.innerHTML += '<h4>Conflation Layer</h4>';
     div.innerHTML += '<input type="checkbox" id="scoreFilter08" checked><span class="legend-color" style="background-color: #090"></span><label>Score >= 80</label><br>';
     div.innerHTML += '<input type="checkbox" id="scoreFilter05_08" checked><span class="legend-color" style="background-color: #c90"></span><label>Score >= 50</label><br>';
-    div.innerHTML += '<input type="checkbox" id="scoreFilterLt05" checked><span class="legend-color" style="background-color: #c00"></span><label>Score >= 10</label><br>';
+    div.innerHTML += '<input type="checkbox" id="scoreFilterLt05" checked><span class="legend-color" style="background-color: #c00"></span><label>Score >= 15</label><br>';
     div.innerHTML += '<input type="checkbox" id="scoreFilterNull" checked><span class="legend-color" style="background-color: #999"></span><label>Score NULL</label><br><br>';
 
     div.innerHTML += '<h4>OSM Layer</h4>';
@@ -346,7 +313,7 @@ function updateFilteredFeatures() {
             return true;
         } else if (filterConditions.score_05_08 && score >= 0.5 && score < 0.8) {
             return true;
-        } else if (filterConditions.score_lt_05 && score >= 0 && score < 0.5 && score !== null) {
+        } else if (filterConditions.score_lt_05 && score >= 0.15 && score < 0.5 && score !== null) {
             return true;
         }  else {
             return false;

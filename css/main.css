@@ -75,6 +75,22 @@ main {
   width: 100%;
 } 
 
+input[type=text] { 
+  width: 100%; 
+  -webkit-transition: width 0.15s ease-in-out; 
+  transition: width 0.15s ease-in-out; 
+} 
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active{
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  box-sizing: border-box;
+  border-radius: 10px;
+}
+
+
 .results-container {
     position: relative;
     display: block;
