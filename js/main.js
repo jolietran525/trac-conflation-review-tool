@@ -246,8 +246,8 @@ t_conflation.then(data => {
 
 
     // get a list of osm_id
-    for (let i = 0; i < conflation.features.length; i++) {
-        osm_ids[i] = conflation.features[i].properties.osm_id;
+    for (let i = 0; i < osm.features.length; i++) {
+        osm_ids[i] = osm.features[i].properties.osm_id;
     }
 });
 
@@ -388,7 +388,52 @@ function displayMatchingItems(matchingItems) {
         let listItem = document.createElement('li');
         listItem.textContent = item;
         resultsElement.appendChild(listItem);
+
+        // Add a click event listener to each list item
+        listItem.addEventListener('click', function () {
+            // Call a function to zoom in and flash the OSM feature
+            zoomAndFlashOSMFeature(item);
+        });
     });
+}
+
+function zoomAndFlashOSMFeature(osmId) {
+    const layer = findLayerByOsmId(osmId); // You need a function to find the layer by OSM ID
+    if (layer) {
+        // Zoom in to the feature
+        map.flyToBounds(layer.getBounds(), 18, { duration: 0.5 });
+
+        // Flash the feature
+        // const originalStyle = layer.setStyle({
+        //     weight: 5, opacity: 0.5, color:  "#BAD4E4"
+        // });
+
+        layer.setStyle({ weight: 10, opacity: 0.7, color: 'red' }); // Temporary flashing style
+
+        // Reset the style after a few seconds (adjust the timeout as needed)
+        setTimeout(() => {
+            layer.setStyle({
+                weight: 5, opacity: 0.5, color:  "#BAD4E4"
+            });
+        }, 8000);
+    }
+
+}
+
+// Function to find the layer by OSM ID (replace this with your actual implementation)
+function findLayerByOsmId(osm_id) {
+    // Assuming you have layers in your map with OSM ID stored in properties
+    // Loop through the layers and find the one with a matching OSM ID
+    let foundLayer = null;
+    osmLayer.eachLayer(function (layer) {
+        // Check if the feature has a property named 'osm_id' and if it matches the provided osmId
+        if (layer.feature.properties.osm_id === osm_id) {
+            // Apply a highlight style to the matching feature
+            foundLayer = layer;
+        }
+    });
+
+    return foundLayer;
 }
 
 
